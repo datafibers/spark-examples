@@ -1,0 +1,51 @@
+package com.lackey.spark.examples.dataset
+
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
+
+
+
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
+
+// For usage on how to test, seem my answer on S.O.->
+// https://stackoverflow.com/questions/48767008/spark-strutured-streaming-automatically-converts-timestamp-to-local-time/57566899#57566899
+object StructuredStreamingExample {
+  def main(args: Array[String]): Unit = {
+
+    val timezone = "PST"
+
+    val spark: SparkSession = SparkSession.builder()
+      .master("local[3]")
+      .appName("SparkByExample")
+      .getOrCreate()
+
+    spark.sparkContext.setLogLevel("ERROR")
+
+    val df = spark.readStream
+      .format("socket")
+      .option("host", "localhost")
+      .option("port", "9999")
+      .load()
+
+    import spark.implicits._
+
+
+    val splitDf = df.select(split(df("value"), " ").as("arr")).
+      select($"arr" (0).as("tsString"), $"arr" (1).as("count")).
+      withColumn("timestamp", to_timestamp($"tsString", "yyyy-MM-dd"))
+    val grouped = splitDf.groupBy(window($"timestamp", "1 day", "1 day").as("date_window")).count()
+
+    val tunedForDisplay =
+      grouped.
+        withColumn("windowStart", to_utc_timestamp($"date_window.start", timezone)).
+        withColumn("windowEnd", to_utc_timestamp($"date_window.end", timezone))
+
+    tunedForDisplay.writeStream
+      .format("console")
+      .outputMode("update")
+      .option("truncate", false)
+      .start()
+      .awaitTermination()
+  }
+}
