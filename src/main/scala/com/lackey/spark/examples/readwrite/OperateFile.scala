@@ -3,6 +3,9 @@ package com.lackey.spark.examples.readwrite
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Dataset, SparkSession}
 
+/*
+This is a quite common way we process file using sql for now
+ */
 
 object OperateFile extends App {
   val sparkSession = SparkSession.builder().appName("simple").master("local[2]").getOrCreate()

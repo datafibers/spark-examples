@@ -1,2 +1,2 @@
 # spark-examples
-Here, we collect commonlu used spark examples
+Here, we collect commonly used spark examples in scala
